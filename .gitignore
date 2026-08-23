@@ -1,0 +1,16 @@
+# 环境与密钥
+.env
+*.env
+
+# 生成的日报
+reports/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# 系统
+.DS_Store

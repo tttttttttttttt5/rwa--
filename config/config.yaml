@@ -1,0 +1,151 @@
+# ============================================================
+# RWA 学术文献日报 —— 主配置文件
+# 修改本文件后，下次运行（GitHub Actions / 本地）即自动生效
+# 所有字段均可按需增删，脚本会做容错处理
+# ============================================================
+
+# ---------- 1. 关键词列表 ----------
+# 每篇论文匹配的关键词越多，优先级越高（大小写不敏感，匹配标题+摘要）
+keywords:
+  - "RWA tokenization"
+  - "real world assets"
+  - "tokenized assets"
+  - "DeFi"
+  - "decentralized finance"
+  - "perpetual futures"
+  - "funding rate"
+  - "blockchain finance"
+  - "on-chain"
+  - "automated market maker"
+  - "AMM"
+  - "liquidity pool"
+  - "stablecoin"
+  - "causal inference"
+  - "GNN"
+  - "graph neural network"
+  - "credit risk"
+  - "oracle"
+  - "yield farming"
+  - "tokenization"
+
+# 特殊关注作者：命中即加分；即使分数低于阈值也会单独标注“★作者关注”并收入日报
+watched_authors:
+  - "Ackerer"
+  - "Singh"
+  - "Schär"
+  - "Bruno Biais"
+  - "Lin William Cong"
+
+# ---------- 2. 期刊 / 来源优先级 ----------
+# JFE/JF/RFS/FRL = 顶档(1)；SSRN/NBER/arXiv 工作论文 = 次档(2)；其它 = 三档(3)
+journal_priority:
+  tier_1_journals:
+    - "Journal of Finance"
+    - "Journal of Financial Economics"
+    - "Review of Financial Studies"
+    - "Journal of Financial and Quantitative Analysis"
+    - "Finance Research Letters"
+    - "Journal of Financial Intermediation"
+  tier_2_journals: []          # 可补充：把中等权威期刊填这里
+  source_tier:                  # 按数据源回退的档位
+    arxiv: 2
+    ssrn: 2
+    nber: 2
+    scholar: 3
+  default_tier: 3
+  tier_scores:
+    1: 30
+    2: 20
+    3: 10
+
+# ---------- 3. 评分阈值与分项权重 ----------
+scoring:
+  threshold: 55                 # 低于此分数的论文直接过滤（特殊关注作者除外）
+  weights:                      # 合计 100
+    keyword: 40
+    journal: 30
+    author: 20
+    recency: 10
+  keyword_full_at: 3            # 命中 3 个关键词即拿满 keyword 分
+  author_bonus_per_hit: 10
+  author_bonus_cap: 20
+  recency:
+    within_days_7: 10
+    within_days_14: 5
+    else: 0
+
+# ---------- 4. AI 增强评分 ----------
+ai:
+  enabled: true                 # 关闭则纯规则评分
+  provider: "anthropic"
+  model: "claude-3-5-sonnet-20241022"
+  weight: 0.3                   # AI 分数在最终分数中的权重 (0~1)，0=纯规则
+  max_papers_to_score: 60      # 控制 API 成本，超过则只取规则分前 N 篇送 AI
+  temperature: 0.0
+
+# ---------- 5. 摘要风格 ----------
+summary:
+  style: "detailed"             # short | detailed | critical
+  max_abstract_chars: 600
+  enable_ai_digest: true        # 是否让 AI 生成一句话中文导读（仅对入选论文）
+
+# ---------- 6. 报告 ----------
+report:
+  top_picks: 2                  # 今日最值得精读的篇数
+  include_citation_graph: true
+  save_dir: "reports"           # 本地保存目录（相对仓库根）
+
+# ---------- 7. 邮件推送 ----------
+notifications:
+  email:
+    enabled: true
+    subject_prefix: "【RWA学术日报】"
+    recipients:
+      - "zhang200202409@126.com"   # ← 你的邮箱
+
+# ---------- 8. 数据源 ----------
+sources:
+  arxiv:
+    enabled: true
+    categories:
+      - "q-fin.TR"
+      - "q-fin.CP"
+      - "q-fin.GN"
+      - "q-fin.MF"
+      - "q-fin.PR"
+      - "q-fin.RM"
+      - "q-fin.ST"
+      - "q-fin.PM"
+      - "q-fin.EC"
+      - "cs.CE"
+      - "cs.LG"
+    lookback_days: 2
+    max_results: 300
+  nber:
+    enabled: true
+    lookback_days: 2
+    feeds:
+      - "https://www.nber.org/rss/feed/site/finance/rss.xml"
+      - "https://www.nber.org/rss/feed/site/asset-pricing/rss.xml"
+      - "https://www.nber.org/rss/feed/site/corporate-finance/rss.xml"
+      - "https://www.nber.org/rss/feed/site/economic-fluctuations-growth/rss.xml"
+  ssrn:
+    enabled: true
+    lookback_days: 2
+    max_results: 60
+    queries:
+      - "RWA tokenization"
+      - "real world assets"
+      - "DeFi"
+      - "tokenized assets"
+      - "perpetual futures pricing"
+  scholar:
+    enabled: false              # 需额外配置 IMAP 邮箱接收 Google Scholar Alerts
+    imap_host: "imap.gmail.com"
+    imap_port: 993
+    mailbox: "INBOX"
+    sender_contains: "scholar.google"
+    lookback_days: 2
+
+# ---------- 9. 全局 ----------
+lookback_days: 2

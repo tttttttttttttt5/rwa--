@@ -1,0 +1,51 @@
+name: RWA 学术文献日报
+
+# 每天北京时间 09:00 自动运行（cron 用 UTC，09:00 CST = 01:00 UTC）
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:        # 支持手动触发，便于调试
+
+permissions:
+  contents: write           # 允许把生成的日报提交回仓库
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 运行日报
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USE_SSL: ${{ secrets.SMTP_USE_SSL }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SCHOLAR_IMAP_USER: ${{ secrets.SCHOLAR_IMAP_USER }}
+          SCHOLAR_IMAP_PASS: ${{ secrets.SCHOLAR_IMAP_PASS }}
+        run: |
+          python -m src.main
+
+      - name: 提交本日报告到仓库
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add reports/ || true
+          git commit -m "chore: daily RWA report $(date -u +%Y-%m-%d)" || echo "no changes"
+          git push || echo "nothing to push"
