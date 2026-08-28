@@ -44,11 +44,19 @@ class ArxivFetcher(BaseFetcher):
                     break  # 结果按提交时间倒序，遇到旧的就停
                 entry_id = getattr(r, "entry_id", "") or ""
                 arxid = entry_id.split("/abs/")[-1] if "/abs/" in entry_id else r.get_short_id()
+                # 去掉版本号 vN，链接用稳定的 abs 页（https）
+                if arxid and arxid[-2] == "v" and arxid[-1].isdigit():
+                    arxid_base = arxid[:-2]
+                else:
+                    arxid_base = arxid
+                stable_url = f"https://arxiv.org/abs/{arxid_base}" if arxid_base else (
+                    entry_id.replace("http://", "https://") or getattr(r, "pdf_url", "")
+                )
                 out.append(Paper(
                     title=(r.title or "").strip().replace("\n", " "),
                     authors=[a.name for a in (r.authors or [])],
                     abstract=(r.summary or "").strip(),
-                    url=entry_id or getattr(r, "pdf_url", "") or f"https://arxiv.org/abs/{arxid}",
+                    url=stable_url,
                     source="arxiv",
                     published=pub.date().isoformat(),
                     journal=f"arXiv {r.primary_category or ''}".strip(),
