@@ -24,7 +24,7 @@ def _abstract(paper, cfg) -> str:
     return text[:cap] + ("…" if len(text) > cap else "")
 
 
-def build_context(papers, top_picks, citation_text, cfg, stats):
+def build_context(papers, top_picks, citation_text, cfg, stats, synthesis=None):
     today = datetime.date.today().isoformat()
     start = (datetime.date.today() - datetime.timedelta(days=cfg.lookback_days)).isoformat()
     rows = []
@@ -42,7 +42,11 @@ def build_context(papers, top_picks, citation_text, cfg, stats):
             "watched": bool(p.watched_authors),
             "abstract": _abstract(p, cfg),
             "digest": p.digest,
+            "summary_content": p.summary_content,
+            "summary_method": p.summary_method,
+            "summary_takeaway": p.summary_takeaway,
         })
+    synth = synthesis or {}
     return {
         "date": today,
         "window": f"{start} ~ {today}",
@@ -52,6 +56,8 @@ def build_context(papers, top_picks, citation_text, cfg, stats):
         "citation_text": citation_text,
         "threshold": cfg.scoring.get("threshold"),
         "keywords": cfg.keywords,
+        "synthesis_overview": synth.get("overview", ""),
+        "synthesis_takeaways": synth.get("takeaways", []) or [],
     }
 
 
@@ -83,12 +89,30 @@ def render_markdown(ctx) -> str:
             p = pick["paper"]
             lines.append(f"- **{p.title}**（{p.final_score:.0f}分）— {pick['reason']}")
         lines.append("")
+
+    # 整体大总结 + 可借鉴要点
+    if ctx.get("synthesis_overview"):
+        lines.append("## 整体大总结")
+        lines.append(ctx["synthesis_overview"])
+        lines.append("")
+    if ctx.get("synthesis_takeaways"):
+        lines.append("## 可借鉴要点")
+        for t in ctx["synthesis_takeaways"]:
+            lines.append(f"- {t}")
+        lines.append("")
+
     lines.append("## 入选论文列表")
     for r in ctx["rows"]:
         tag = " [★作者关注]" if r["watched"] else ""
         lines.append(f"- [{r['title']}]({r['url']}) — {r['authors']} | {r['source']} | {r['score']:.0f}分{tag}")
         if r["digest"]:
-            lines.append(f"  - {r['digest']}")
+            lines.append(f"  - 导读：{r['digest']}")
+        if r.get("summary_content"):
+            lines.append(f"  - 研究内容：{r['summary_content']}")
+        if r.get("summary_method"):
+            lines.append(f"  - 方法：{r['summary_method']}")
+        if r.get("summary_takeaway"):
+            lines.append(f"  - 可借鉴：{r['summary_takeaway']}")
     lines.append("")
     lines.append("## 论文关联图说明")
     lines.append(ctx["citation_text"])

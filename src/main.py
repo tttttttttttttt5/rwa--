@@ -97,7 +97,7 @@ def main():
     selected.sort(key=lambda x: x.final_score, reverse=True)
     log.info("入选 %d 篇（阈值 %.0f）", len(selected), threshold)
 
-    # 6. 中文导读（仅入选论文，控制成本）
+    # 6. 中文导读 + 结构化总结（内容/方法/可借鉴），仅入选论文，控制成本
     if cfg.summary.get("enable_ai_digest") and llm.enabled:
         style = cfg.summary.get("style", "detailed")
         for p in selected[:20]:
@@ -105,6 +105,16 @@ def main():
                 p.digest = llm.generate_digest(p, style)
             except Exception:
                 pass
+    if cfg.summary.get("enable_structured_summary") and llm.enabled:
+        n_sum = int(cfg.summary.get("structured_summary_max_papers", 20))
+        for p in selected[:n_sum]:
+            try:
+                s = llm.generate_structured_summary(p)
+                p.summary_content = s.get("content", "")
+                p.summary_method = s.get("method", "")
+                p.summary_takeaway = s.get("takeaway", "")
+            except Exception as e:
+                log.warning("结构化总结异常 [%s]: %s", p.title[:40], e)
 
     # 7. 引用关系图
     citation_text = "今日入选论文之间未检测到直接引用关系。"
@@ -119,6 +129,14 @@ def main():
     if not top_picks and selected:
         top_picks = [{"paper": selected[0], "reason": "今日规则评分最高"}][:int(cfg.report.get("top_picks", 2))]
 
+    # 8.5 整体大总结 + 可借鉴要点
+    synthesis = {}
+    if cfg.report.get("include_synthesis") and llm.enabled and selected:
+        try:
+            synthesis = llm.generate_synthesis(selected)
+        except Exception as e:
+            log.warning("整体大总结异常: %s", e)
+
     # 9. 生成报告
     stats = {
         "fetched": len(papers),
@@ -126,7 +144,7 @@ def main():
         "by_source": dict(Counter(p.source for p in selected)),
         "candidates": len(candidates),
     }
-    ctx = report.build_context(selected, top_picks, citation_text, cfg, stats)
+    ctx = report.build_context(selected, top_picks, citation_text, cfg, stats, synthesis)
     html = report.render_html(ctx)
     md = report.render_markdown(ctx)
     html_path, md_path = report.save(html, md, cfg)

@@ -21,7 +21,10 @@ class Paper:
     rule_score: float = 0.0
     ai_score: Optional[float] = None
     final_score: float = 0.0
-    digest: str = ""                # AI 生成的中文导读（可选）
+    digest: str = ""                # AI 生成的一句话中文导读（可选）
+    summary_content: str = ""       # AI 结构化总结：研究内容
+    summary_method: str = ""        # AI 结构化总结：方法
+    summary_takeaway: str = ""      # AI 结构化总结：可借鉴之处
     cites: list[str] = field(default_factory=list)       # 本集合内被引用的 key
     cited_by: list[str] = field(default_factory=list)
     raw: dict = field(default_factory=dict)

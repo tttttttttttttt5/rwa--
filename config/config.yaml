@@ -88,11 +88,15 @@ summary:
   style: "detailed"             # short | detailed | critical
   max_abstract_chars: 600
   enable_ai_digest: true        # 是否让 AI 生成一句话中文导读（仅对入选论文）
+  enable_structured_summary: true  # 是否让 AI 为每篇入选论文生成
+                                    # “研究内容 / 方法 / 可借鉴”三段式结构化总结
+  structured_summary_max_papers: 20  # 控制成本：只对前 N 篇入选论文生成结构化总结
 
 # ---------- 6. 报告 ----------
 report:
   top_picks: 2                  # 今日最值得精读的篇数
   include_citation_graph: true
+  include_synthesis: true       # 是否生成整体大总结 + 可借鉴要点（需 ai.enabled）
   save_dir: "reports"           # 本地保存目录（相对仓库根）
 
 # ---------- 7. 邮件推送 ----------
