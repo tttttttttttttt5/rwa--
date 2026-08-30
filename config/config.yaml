@@ -129,11 +129,11 @@ sources:
       - "q-fin.EC"
       - "cs.CE"
       - "cs.LG"
-    lookback_days: 2
+    lookback_days: 14
     max_results: 300
   nber:
     enabled: true
-    lookback_days: 2
+    lookback_days: 14
     feeds:
       - "https://www.nber.org/rss/feed/site/finance/rss.xml"
       - "https://www.nber.org/rss/feed/site/asset-pricing/rss.xml"
@@ -141,7 +141,7 @@ sources:
       - "https://www.nber.org/rss/feed/site/economic-fluctuations-growth/rss.xml"
   ssrn:
     enabled: true
-    lookback_days: 2
+    lookback_days: 14
     max_results: 60
     queries:
       - "RWA tokenization"
@@ -155,7 +155,7 @@ sources:
     imap_port: 993
     mailbox: "INBOX"
     sender_contains: "scholar.google"
-    lookback_days: 2
+    lookback_days: 14
 
 # ---------- 9. 全局 ----------
-lookback_days: 2
+lookback_days: 14
