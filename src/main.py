@@ -11,7 +11,7 @@ import os
 import sys
 from collections import Counter
 
-from . import citation_graph, email_sender, report, scoring
+from . import citation_graph, email_sender, report, scoring, rule_summary
 from .config_loader import load_config
 from .llm import LLM
 from .fetchers.arxiv_fetcher import ArxivFetcher
@@ -97,19 +97,35 @@ def main():
     selected.sort(key=lambda x: x.final_score, reverse=True)
     log.info("入选 %d 篇（阈值 %.0f）", len(selected), threshold)
 
-    # 6. 中文导读 + 结构化总结（内容/方法/可借鉴），仅入选论文，控制成本
-    if cfg.summary.get("enable_ai_digest") and llm.enabled:
-        style = cfg.summary.get("style", "detailed")
-        for p in selected[:20]:
-            try:
-                p.digest = llm.generate_digest(p, style)
-            except Exception:
-                pass
-    if cfg.summary.get("enable_structured_summary") and llm.enabled:
+    # 6. 中文导读 + 结构化总结（内容/方法/可借鉴），仅入选论文
+    #    优先级：AI -> 否则纯规则版（无需 API key）
+    use_rule = not llm.enabled
+    if cfg.summary.get("enable_ai_digest"):
+        if llm.enabled:
+            style = cfg.summary.get("style", "detailed")
+            for p in selected[:20]:
+                try:
+                    p.digest = llm.generate_digest(p, style)
+                except Exception:
+                    pass
+        else:
+            # 规则版导读（fallback）
+            for p in selected:
+                if not p.digest:
+                    try:
+                        s = rule_summary.summarize_paper(p)
+                        p.digest = s.get("digest", "")
+                    except Exception:
+                        pass
+
+    if cfg.summary.get("enable_structured_summary"):
         n_sum = int(cfg.summary.get("structured_summary_max_papers", 20))
         for p in selected[:n_sum]:
+            if p.summary_content and p.summary_method and p.summary_takeaway:
+                continue  # AI 版已经填过
             try:
-                s = llm.generate_structured_summary(p)
+                s = llm.generate_structured_summary(p) if llm.enabled else \
+                    rule_summary.summarize_paper(p)
                 p.summary_content = s.get("content", "")
                 p.summary_method = s.get("method", "")
                 p.summary_takeaway = s.get("takeaway", "")
@@ -129,11 +145,14 @@ def main():
     if not top_picks and selected:
         top_picks = [{"paper": selected[0], "reason": "今日规则评分最高"}][:int(cfg.report.get("top_picks", 2))]
 
-    # 8.5 整体大总结 + 可借鉴要点
+    # 8.5 整体大总结 + 可借鉴要点（AI 优先，否则纯规则版）
     synthesis = {}
-    if cfg.report.get("include_synthesis") and llm.enabled and selected:
+    if cfg.report.get("include_synthesis") and selected:
         try:
-            synthesis = llm.generate_synthesis(selected)
+            if llm.enabled:
+                synthesis = llm.generate_synthesis(selected)
+            else:
+                synthesis = rule_summary.synthesize(selected)
         except Exception as e:
             log.warning("整体大总结异常: %s", e)
 

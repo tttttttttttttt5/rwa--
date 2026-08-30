@@ -75,28 +75,34 @@ scoring:
     else: 0
 
 # ---------- 4. AI 增强评分 ----------
+# 把 enabled 改为 false 可完全不用 API key：
+#   · 评分 = 纯规则（关键词/作者/期刊/时效）
+#   · 每篇三段总结 + 导读 + 整体大总结 + 可借鉴要点 = 纯规则模板映射
+#     （基于摘要切句 + 方法词典 + 可借鉴模板，见 src/rule_summary.py）
 ai:
-  enabled: true                 # 关闭则纯规则评分
+  enabled: false                # true = 接 Claude；false = 纯规则零 API（推荐）
   provider: "anthropic"
   model: "claude-3-5-sonnet-20241022"
-  weight: 0.3                   # AI 分数在最终分数中的权重 (0~1)，0=纯规则
+  weight: 0.3                   # AI 分数在最终分数中的权重 (0~1)，ai.enabled=false 时忽略
   max_papers_to_score: 60      # 控制 API 成本，超过则只取规则分前 N 篇送 AI
   temperature: 0.0
 
 # ---------- 5. 摘要风格 ----------
 summary:
-  style: "detailed"             # short | detailed | critical
+  style: "detailed"             # short | detailed | critical（仅 AI 导读生效）
   max_abstract_chars: 600
-  enable_ai_digest: true        # 是否让 AI 生成一句话中文导读（仅对入选论文）
-  enable_structured_summary: true  # 是否让 AI 为每篇入选论文生成
-                                    # “研究内容 / 方法 / 可借鉴”三段式结构化总结
-  structured_summary_max_papers: 20  # 控制成本：只对前 N 篇入选论文生成结构化总结
+  enable_ai_digest: true        # 是否生成一句话中文导读（ai.enabled=false 时走规则版）
+  enable_structured_summary: true  # 是否生成
+                                   # “研究内容 / 方法 / 可借鉴”三段式结构化总结
+                                   # （ai.enabled=false 时走规则版，无需 API）
+  structured_summary_max_papers: 20  # 结构化总结的论文上限（控制 AI 成本或计算量）
 
 # ---------- 6. 报告 ----------
 report:
   top_picks: 2                  # 今日最值得精读的篇数
   include_citation_graph: true
-  include_synthesis: true       # 是否生成整体大总结 + 可借鉴要点（需 ai.enabled）
+  include_synthesis: true       # 整体大总结 + 可借鉴要点
+                                # （ai.enabled=false 时走规则版，无需 API）
   save_dir: "reports"           # 本地保存目录（相对仓库根）
 
 # ---------- 7. 邮件推送 ----------
