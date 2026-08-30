@@ -10,6 +10,74 @@ from __future__ import annotations
 import re
 from collections import Counter
 
+# ---------- 主题词典：命中则在"研究内容"中用中文归类 ----------
+TOPIC_PATTERNS = [
+    # RWA 通证化
+    (r"\brwa\b|real[- ]?world asset|tokenized (asset|bond|loan|commodity|equity|real estate)",
+     "RWA 现实资产通证化"),
+    (r"asset[- ]?backed|security token|\bsto\b", "资产支持代币 / 证券型代币"),
+    (r"collateral[- ]?backed|rwa collateral|rwa (lending|pricing|risk)",
+     "RWA 抵押品/定价/风险管理"),
+    (r"tokenization|tokeniz", "资产通证化机制"),
+
+    # DeFi 机制设计
+    (r"amm|automated market maker|concentrated liquidity",
+     "AMM 自动化做市商（含集中流动性）"),
+    (r"liquidity provider|impermanent loss|liquidity mining|yield farming",
+     "LP 激励与无常损失分析"),
+    (r"liquidity pool", "流动性池设计"),
+    (r"decentralized exchange|dex", "去中心化交易所 DEX"),
+    (r"lending protocol|money market|cdp\b|collateralized debt",
+     "去中心化借贷/抵押债务（CDP）"),
+    (r"\bdefi\b|decentralized finance", "DeFi 协议生态"),
+    (r"stablecoin|algorithmic stablecoin|pegging|peg\b",
+     "稳定币钉住与储备机制"),
+    (r"oracle|price feed|chainlink|twap", "预言机与价格反馈"),
+    (r"perpetual|funding rate|synthetic asset|derivative|\boption\b",
+     "衍生品 / 永续合约 / 合成资产定价"),
+    (r"flash loan|flash swap", "闪电贷 / 闪电互换机制"),
+
+    # DeFi 风险 / 安全 / 治理
+    (r"\bmev\b|maximal extractable value|sandwich|front[- ]?running",
+     "MEV 最大可提取价值 / 抢跑交易"),
+    (r"cross[- ]chain|\bbridge\b|wrapped asset|atomic swap",
+     "跨链桥 / 跨链资产映射"),
+    (r"liquid staking|restaking|\blsd\b|staked eth|eigenlayer",
+     "流动性质押 / 再质押"),
+    (r"governance token|\bdao\b|decentralized autonomous|on[- ]chain governance",
+     "DAO 治理 / 代币治理设计"),
+    (r"smart contract|defi security|protocol risk|rug pull|\bexploit\b|\bhack\b",
+     "合约安全 / 协议风险 / 攻击分析"),
+    (r"account abstraction|aa wallet|meta[- ]transaction",
+     "账户抽象 AA / 智能钱包"),
+    (r"\btvl\b|total value locked|protocol (revenue|fee)",
+     "协议 TVL / 收入与经济模型"),
+
+    # 基础设施
+    (r"zero[- ]knowledge|\bzkp\b|zk-|rollup|layer 2|layer2|\bl2\b|scalability",
+     "ZK 证明 / Rollup / 二层扩展"),
+    (r"\bprivacy\b", "隐私保护设计"),
+
+    # 金融 / 链上实证
+    (r"on[- ]chain|blockchain (data|analytic)|distributed ledger|crypto (asset|finance|lending)|digital asset|\bweb3\b",
+     "链上实证 / 加密资产金融"),
+    (r"credit risk|default probability|merton|copula",
+     "信用风险 / 违约概率建模"),
+    (r"volatility|garch|(value[ -]at[ -]risk|\bvar\b|expected shortfall|tail risk)",
+     "波动率 / 尾部风险测度"),
+    (r"portfolio optimization|mean[- ]variance|markowitz|asset allocation",
+     "资产配置 / 投资组合优化"),
+    (r"market efficiency|price efficiency|informational efficiency|no[- ]?arbitrage|\barbitrage\b",
+     "市场有效性 / 无套利关系"),
+    (r"yield curve|duration|convexity|interest rate",
+     "利率期限结构 / 久期凸性"),
+    (r"market microstructure|liquidity|bid[ -]ask|transaction cost|market impact",
+     "市场微观结构 / 流动性 / 交易成本"),
+    (r"systemic risk|contagion|cascade|network (risk|effect)",
+     "系统性风险 / 跨主体传染"),
+]
+
+
 # ---------- 方法词典：命中则在"方法"段列举 ----------
 METHOD_PATTERNS = [
     # 机器学习 / 深度学习
@@ -146,6 +214,18 @@ def _split_sentences(text: str) -> list[str]:
     return out
 
 
+def _match_topics(text: str) -> list[str]:
+    """根据 TOPIC_PATTERNS 匹配中文研究方向标签。"""
+    hits = []
+    seen = set()
+    for pat, label in TOPIC_PATTERNS:
+        if re.search(pat, text, flags=re.I):
+            if label not in seen:
+                hits.append(label)
+                seen.add(label)
+    return hits
+
+
 def _match_methods(text: str) -> list[str]:
     hits = []
     seen = set()
@@ -155,6 +235,51 @@ def _match_methods(text: str) -> list[str]:
                 hits.append(label)
                 seen.add(label)
     return hits
+
+
+# ---------- 样本/数据设定模式 → 中文一句话描述 ----------
+SAMPLE_PATTERNS = [
+    (r"\bon[ -]?chain transaction|on[ -]?chain data|blockchain data|event log|tx[ -]level",
+     "使用链上交易/事件级数据构建样本"),
+    (r"\bpanel\b|cross[ -]section|time[ -]series",
+     "采用面板/时序实证框架"),
+    (r"\brolling[- ]window|rolling (back|fore)?cast|out[ -]of[ -]sample|back[- ]?test",
+     "通过滚动窗口进行前向回测/样本外验证"),
+    (r"daily\s+frequency|intraday|high[ -]frequency|minute[ -]level|\btick\b",
+     "覆盖高频/日内/日度数据粒度"),
+    (r"\b(monthly|yearly|month|year)[ -]ly\b|over \d+ (year|month|day)",
+     "跨度多年/多月，样本时序较充分"),
+    (r"\bsample\b|dataset|n ?= ?\d+|\d+ observations",
+     "样本规模较大，具备统计显著性"),
+    (r"propensity score|difference[ -]in[ -]differences|did\b|regression discontinuity|instrumental variable",
+     "采用因果识别框架缓解内生性问题"),
+    (r"benchmark|compared against|state[ -]of[ -]the[ -]art|baseline",
+     "与主流基准模型进行系统对比"),
+    (r"we propose|we design|we present|we develop|novel framework",
+     "提出了一个新的机制/模型框架"),
+    (r"stylized fact|simulation|calibration|agent[ -]based",
+     "结合典型事实、校准或模拟进行分析"),
+    (r"mathematical model|theoretical model|closed[ -]form|equilibrium",
+     "构建理论模型并推导均衡/闭式解"),
+    (r"empirical|evidence|document|show that|find that",
+     "以实证结果支撑研究结论"),
+]
+
+
+def _match_sample_setup(text: str) -> str:
+    """命中样本描述模式 → 中文一句话说明数据/实证设计。"""
+    pieces = []
+    seen = set()
+    for pat, desc in SAMPLE_PATTERNS:
+        if re.search(pat, text, flags=re.I):
+            if desc not in seen:
+                pieces.append(desc)
+                seen.add(desc)
+            if len(pieces) >= 3:
+                break
+    if not pieces:
+        return "论文整体结构清晰，数据/模型设定规范，细节请读者参考原文"
+    return "；".join(pieces)
 
 
 def _takeaway_for_text(text: str, max_n=2) -> list[str]:
@@ -176,50 +301,76 @@ def _clean(s: str) -> str:
 
 # ---------- 单篇：结构化三段总结 + 导读 ----------
 def summarize_paper(paper) -> dict:
-    """返回 {'content':..., 'method':..., 'takeaway':..., 'digest':...}。"""
+    """返回 {'content':..., 'method':..., 'takeaway':..., 'digest':...}。
+    说明：content/method 一律用中文模板生成，不拼接英文原句。"""
     title = _clean(paper.title)
     abstract = _clean(paper.abstract)
     combined = f"{title}. {abstract}"
-    sents = _split_sentences(abstract)
 
-    # 1) 研究内容 = 摘要开头第一句/第二句 + 标题
-    content_parts = []
-    if title:
-        content_parts.append(f"围绕《{title}》展开")
-    if sents:
-        # 第一句是动机/问题
-        content_parts.append(sents[0])
-    if len(sents) >= 2:
-        # 第二句常是贡献或方法概述，取一部分
-        s2 = sents[1]
-        content_parts.append(s2 if len(s2) < 200 else s2[:197] + "…")
-    content = _clean("。".join(content_parts)) + "。"
-    content = content.replace("。。", "。").replace("：。", "：")
-
-    # 2) 方法 = 方法词典命中 + 关键词中"方法类"补充
-    method_parts = []
+    topics = _match_topics(combined)
     methods = _match_methods(combined)
+    sample_setup = _match_sample_setup(combined)
+
+    # -------- 1) 研究内容（全中文）--------
+    content_lines = []
+    if title:
+        content_lines.append(f"围绕《{title}》展开")
+    if topics:
+        # 核心方向（最多 3 条避免过长）
+        core = "、".join(topics[:3])
+        content_lines.append(f"属于「{core}」方向")
+    # 研究问题的中文提示：根据标题里的动作词定性
+    low_title = (title or "").lower()
+    if any(w in low_title for w in ("risk", "default", "crisis", "contagion", "vulnerab")):
+        content_lines.append("重点考察标的或体系的风险与脆弱性")
+    elif any(w in low_title for w in ("pric", "valu", "return", "discount", "premium")):
+        content_lines.append("聚焦定价/估值/收益形成机制")
+    elif any(w in low_title for w in ("design", "mechanism", "protocol", "framework", "model")):
+        content_lines.append("讨论机制设计或协议/模型框架")
+    elif any(w in low_title for w in ("stablecoin", "peg", "collateral")):
+        content_lines.append("分析钉住与抵押品管理等关键问题")
+    elif any(w in low_title for w in ("gov", "voting", "dao", "incentive", "tokenomics")):
+        content_lines.append("探讨治理与代币经济的激励相容")
+    elif any(w in low_title for w in ("amm", "liquidity", "dex", "pool")):
+        content_lines.append("关注做市/流动性机制与交易质量")
+    elif any(w in low_title for w in ("credit", "lend", "borrow", "loan", "debt")):
+        content_lines.append("考察信贷/借贷关系与资产质量")
+    elif any(w in low_title for w in ("bridge", "cross[ -]chain", "exploit", "attack", "mev", "arbitrage")):
+        content_lines.append("围绕跨链/攻击/套利/MEV 等操作层问题展开")
+    elif any(w in low_title for w in ("empirical", "evidence", "analy", "study", "investigate")):
+        content_lines.append("通过实证数据回答核心研究问题")
+    else:
+        content_lines.append("系统讨论该方向的关键问题与应用前景")
+    # 再加一句：聚焦场景
+    scene_hints = []
+    if any("RWA" in t or "现实资产" in t for t in topics):
+        scene_hints.append("RWA 通证化落地场景")
+    if any("DeFi" in t or "协议" in t or "DEX" in t for t in topics):
+        scene_hints.append("链上 DeFi 协议运行场景")
+    if any("稳定币" in t or "预言机" in t for t in topics):
+        scene_hints.append("价格与钉住维护场景")
+    if any("风险" in t or "传染" in t or "安全" in t for t in topics):
+        scene_hints.append("风险监控与安全防护场景")
+    if scene_hints:
+        content_lines.append("面向" + "、".join(scene_hints))
+    content = "，".join(content_lines) + "。"
+    content = content.replace("，，", "，").replace("。。", "。").replace("：。", "：")
+
+    # -------- 2) 方法（全中文：方法词典 + 样本设计模板）--------
+    method_parts = []
     if methods:
-        method_parts.append("采用 " + "、".join(methods[:5]))
-    # 扫描摘要的后半句寻找数据/样本描述
-    data_sents = []
-    for s in sents[2:7]:
-        low = s.lower()
-        if any(k in low for k in ("sample", "dataset", "panel", "backtest",
-                                   "on-chain", "transaction", "minute",
-                                   "daily", "monthly", "year", "period",
-                                   "we use", "using ", "over ", "from ",
-                                   "验证", "回测", "样本", "数据")):
-            data_sents.append(s)
-            if len(data_sents) >= 2:
-                break
-    data_text = " ".join(data_sents)
-    if data_text:
-        method_parts.append("基于 " + _clean(data_text)[:220])
-    if not method_parts:
-        # 兜底：取摘要前两句
-        method_parts.append("基于常规实证/建模范式，" + (sents[1][:120] if len(sents) > 1 else sents[0][:120] if sents else "详情见原文"))
+        method_parts.append("采用" + "、".join(methods[:4]) + "等方法体系")
+    else:
+        # 兜底：按 abstract 动词线索给出中文类名
+        if any(w in combined.lower() for w in ("we propose", "design", "framework", "model")):
+            method_parts.append("采用理论建模与机制设计方法")
+        elif any(w in combined.lower() for w in ("regression", "estimate", "sample", "dataset")):
+            method_parts.append("采用计量/统计实证方法")
+        else:
+            method_parts.append("采用文献梳理+建模/实证的规范范式")
+    method_parts.append(sample_setup)
     method = "；".join(method_parts) + "。"
+    method = method.replace("；；", "；").replace("。。", "。")
 
     # 3) 可借鉴 = TAKEAWAY_TEMPLATES 命中（排除兜底通配），最多 3 条
     takeaways = _takeaway_for_text(combined, max_n=3)
