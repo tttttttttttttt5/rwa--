@@ -49,13 +49,30 @@ def enrich(paper, cfg) -> int:
     return tier
 
 
+def _weighted_keyword_hits(paper, cfg) -> float:
+    """关键词分层加权命中数：核心词 1.0/个，辅助词 0.4/个。"""
+    tiers = getattr(cfg, "keyword_tiers", None) or cfg.scoring.get("keyword_tiers", {})
+    if not tiers:
+        # 无分层配置 → 回退到原始计数
+        return float(len(paper.matched_keywords))
+
+    core_list = [k.lower() for k in tiers.get("tier_core", [])]
+    aux_list = [k.lower() for k in tiers.get("tier_aux", [])]
+    text = f"{paper.title} {paper.abstract}".lower()
+
+    core_hits = sum(1 for k in core_list if k and k in text)
+    aux_hits = sum(1 for k in aux_list if k and k in text)
+    return core_hits * 1.0 + aux_hits * 0.4
+
+
 def _rule_score(paper, tier: int, cfg) -> float:
     s = cfg.scoring
     w = s.get("weights", {"keyword": 40, "journal": 30, "author": 20, "recency": 10})
 
-    kw_hits = len(paper.matched_keywords)
-    full_at = max(int(s.get("keyword_full_at", 3)), 1)
-    kw_pts = min(kw_hits / full_at, 1.0) * w["keyword"]
+    # 关键词：分层加权命中 → 归一化
+    kw_weighted = _weighted_keyword_hits(paper, cfg)
+    full_at = max(float(s.get("keyword_full_at", 3)), 1.0)
+    kw_pts = min(kw_weighted / full_at, 1.0) * w["keyword"]
 
     tier_scores = cfg.journal_priority.get("tier_scores", {1: 30, 2: 20, 3: 10})
     jl_pts = tier_scores.get(tier, tier_scores.get(3, 10))

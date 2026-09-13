@@ -97,12 +97,106 @@ keywords:
   - "distributed ledger"
   - "Web3"
 
+  # ---- AI 金融 / 机器学习金融（广义，权重较低，需与 RWA/DeFi 联合命中才入选）----
+  - "machine learning"
+  - "deep learning"
+  - "reinforcement learning"
+  - "neural network"
+  - "transformer"
+  - "large language model"
+  - "LLM"
+  - "NLP"
+  - "natural language processing"
+  - "sentiment analysis"
+  - "text mining"
+  - "alternative data"
+  - "algorithmic trading"
+  - "quantitative trading"
+  - "quantitative finance"
+  - "factor model"
+  - "alpha"
+  - "portfolio optimization"
+  - "risk management"
+  - "market prediction"
+  - "price prediction"
+  - "trading strategy"
+  - "financial forecasting"
+  - "time series forecasting"
+  - "limit order book"
+  - "order flow"
+  - "market microstructure"
+  - "high-frequency trading"
+  - "anomaly detection"
+  - "fraud detection"
+
   # ---- 常用方法学关键词（命中=加分，说明有干货）----
   - "causal inference"
   - "GNN"
   - "graph neural network"
   - "credit risk"
   - "default probability"
+
+# ---------- 1b. 关键词分层权重 ----------
+# 核心层（tier_core）每个命中 = 1.0 倍权重；辅助层（tier_aux）每个命中 = 0.4 倍权重
+# 这样纯 AI/ML 论文（只命中辅助层）很难独自达标，必须与 RWA/DeFi 联合命中
+keyword_tiers:
+  tier_core:               # RWA + DeFi 核心词（高权重）
+    - "RWA"
+    - "real world asset"
+    - "real-world asset"
+    - "tokenized asset"
+    - "asset tokenization"
+    - "tokenization"
+    - "DeFi"
+    - "decentralized finance"
+    - "stablecoin"
+    - "AMM"
+    - "automated market maker"
+    - "liquidity pool"
+    - "lending protocol"
+    - "oracle"
+    - "perpetual"
+    - "funding rate"
+    - "yield farming"
+    - "MEV"
+    - "flash loan"
+    - "DAO"
+    - "smart contract"
+    - "blockchain"
+    - "crypto asset"
+    - "crypto lending"
+    - "digital asset"
+  tier_aux:                # AI/ML/量化方法词（低权重，需与核心词联合）
+    - "machine learning"
+    - "deep learning"
+    - "reinforcement learning"
+    - "neural network"
+    - "transformer"
+    - "large language model"
+    - "LLM"
+    - "NLP"
+    - "natural language processing"
+    - "sentiment analysis"
+    - "text mining"
+    - "algorithmic trading"
+    - "quantitative trading"
+    - "quantitative finance"
+    - "factor model"
+    - "portfolio optimization"
+    - "market prediction"
+    - "price prediction"
+    - "trading strategy"
+    - "financial forecasting"
+    - "time series forecasting"
+    - "high-frequency trading"
+    - "GNN"
+    - "graph neural network"
+    - "causal inference"
+    - "credit risk"
+    - "default probability"
+    - "anomaly detection"
+    - "fraud detection"
+    - "risk management"
 
 # 特殊关注作者：命中即加分；即使分数低于阈值也会单独标注“★作者关注”并收入日报
 watched_authors:
@@ -116,13 +210,35 @@ watched_authors:
 # JFE/JF/RFS/FRL = 顶档(1)；SSRN/NBER/arXiv 工作论文 = 次档(2)；其它 = 三档(3)
 journal_priority:
   tier_1_journals:
+    # 金融顶刊
     - "Journal of Finance"
     - "Journal of Financial Economics"
     - "Review of Financial Studies"
     - "Journal of Financial and Quantitative Analysis"
     - "Finance Research Letters"
     - "Journal of Financial Intermediation"
-  tier_2_journals: []          # 可补充：把中等权威期刊填这里
+    - "Journal of Financial Economics"
+    # AI/ML/量化顶刊 + 交叉
+    - "Journal of Machine Learning Research"
+    - "Journal of Financial Data Science"
+    - "Journal of Computational Finance"
+    - "Quantitative Finance"
+    - "Journal of Financial Econometrics"
+    - "Review of Asset Pricing Studies"
+    - "Journal of Portfolio Management"
+    - "Journal of Risk"
+    - "Mathematical Finance"
+  tier_2_journals:
+    - "Management Science"
+    - "Review of Finance"
+    - "Journal of Banking and Finance"
+    - "Journal of Financial Stability"
+    - "Journal of Empirical Finance"
+    - "Pacific Basin Finance Journal"
+    - "Finance Research Letters"
+    - "Digital Finance"
+    - "Frontiers in Finance"
+    - "Journal of Alternative Investments"
   source_tier:                  # 按数据源回退的档位
     arxiv: 2
     ssrn: 2
@@ -194,19 +310,24 @@ sources:
   arxiv:
     enabled: true
     categories:
-      - "q-fin.TR"
-      - "q-fin.CP"
-      - "q-fin.GN"
-      - "q-fin.MF"
-      - "q-fin.PR"
-      - "q-fin.RM"
-      - "q-fin.ST"
-      - "q-fin.PM"
-      - "q-fin.EC"
-      - "cs.CE"
-      - "cs.LG"
+      # 量化金融全分类
+      - "q-fin.TR"       # Trading & Market Microstructure
+      - "q-fin.CP"       # Computational Finance
+      - "q-fin.GN"       # General Finance
+      - "q-fin.MF"       # Mathematical Finance
+      - "q-fin.PR"       # Pricing of Securities
+      - "q-fin.RM"       # Risk Management
+      - "q-fin.ST"       # Statistics
+      - "q-fin.PM"       # Portfolio Management
+      - "q-fin.EC"       # Economics
+      # AI / ML / NLP（覆盖 AI 金融交叉论文）
+      - "cs.AI"          # Artificial Intelligence
+      - "cs.LG"          # Machine Learning
+      - "stat.ML"        # Machine Learning (Stat)
+      - "cs.CL"          # Computation & Language (NLP/LLM)
+      - "cs.CE"          # Computational Engineering
     lookback_days: 14
-    max_results: 300
+    max_results: 500
   nber:
     enabled: true
     lookback_days: 14
@@ -218,13 +339,26 @@ sources:
   ssrn:
     enabled: true
     lookback_days: 14
-    max_results: 60
+    max_results: 80
     queries:
+      # RWA / DeFi 方向
       - "RWA tokenization"
       - "real world assets"
       - "DeFi"
       - "tokenized assets"
-      - "perpetual futures pricing"
+      - "stablecoin"
+      - "decentralized finance"
+      # AI 金融 / 机器学习金融
+      - "machine learning finance"
+      - "deep learning asset pricing"
+      - "AI financial markets"
+      - "NLP finance"
+      - "reinforcement learning trading"
+      # 量化 / 算法交易
+      - "quantitative trading"
+      - "algorithmic trading"
+      - "factor model"
+      - "portfolio optimization"
   scholar:
     enabled: false              # 需额外配置 IMAP 邮箱接收 Google Scholar Alerts
     imap_host: "imap.gmail.com"

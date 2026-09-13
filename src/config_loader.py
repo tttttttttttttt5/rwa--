@@ -26,6 +26,10 @@ class Config:
         return self.get("keywords", default=[]) or []
 
     @property
+    def keyword_tiers(self) -> dict:
+        return self.get("keyword_tiers", default={}) or {}
+
+    @property
     def watched_authors(self) -> list[str]:
         return self.get("watched_authors", default=[]) or []
 
