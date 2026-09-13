@@ -327,7 +327,7 @@ sources:
       - "cs.CL"          # Computation & Language (NLP/LLM)
       - "cs.CE"          # Computational Engineering
     lookback_days: 14
-    max_results: 500
+    max_results: 300
   nber:
     enabled: true
     lookback_days: 14
