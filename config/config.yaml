@@ -146,7 +146,6 @@ keyword_tiers:
     - "real-world asset"
     - "tokenized asset"
     - "asset tokenization"
-    - "tokenization"
     - "DeFi"
     - "decentralized finance"
     - "stablecoin"
@@ -154,7 +153,6 @@ keyword_tiers:
     - "automated market maker"
     - "liquidity pool"
     - "lending protocol"
-    - "oracle"
     - "perpetual"
     - "funding rate"
     - "yield farming"
@@ -167,6 +165,8 @@ keyword_tiers:
     - "crypto lending"
     - "digital asset"
   tier_aux:                # AI/ML/量化方法词（低权重，需与核心词联合）
+    - "tokenization"        # 纯 "tokenization"（ML/推荐文本经常出现）不单独入选，须与 DeFi/RWA 联合
+    - "oracle"              # 纯 "oracle"（ML 里常指 oracle 模型/上界）不单独入选，须与 DeFi/RWA 联合
     - "machine learning"
     - "deep learning"
     - "reinforcement learning"
