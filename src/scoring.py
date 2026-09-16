@@ -2,11 +2,40 @@
 from __future__ import annotations
 
 import datetime
+import re
+
+# 词边界匹配：避免 "DeFi" 匹配到 "deficit"、"AMM" 匹配到 "amman" 等子串误判
+_WORD_RE_CACHE: dict = {}
+
+
+def _in_text(text_clean: str, keyword: str) -> bool:
+    """在干净小写文本里做词边界子串匹配。keyword 可为短语（含空格）。"""
+    if not keyword:
+        return False
+    k = keyword.lower()
+    rx = _WORD_RE_CACHE.get(k)
+    if rx is None:
+        # 用 \b 包裹关键词，短语内部空格用 \s+ 兼容
+        pattern = r"(?<![a-z0-9])" + re.escape(k).replace(r"\ ", r"\s+") + r"(?![a-z0-9])"
+        rx = re.compile(pattern)
+        _WORD_RE_CACHE[k] = rx
+    return bool(rx.search(text_clean))
 
 
 def match_keywords(paper, keywords: list[str]) -> list[str]:
     text = f"{paper.title} {paper.abstract}".lower()
-    return [k for k in keywords if k and k.lower() in text]
+    return [k for k in keywords if _in_text(text, k)]
+
+
+def match_core_keywords(paper, cfg) -> bool:
+    """是否命中任一核心金融关键词（RWA/DeFi/稳定币等）。
+    用于候选池门禁：仅命中 AI 泛词/辅助词的纯技术论文不入选。"""
+    tiers = getattr(cfg, "keyword_tiers", None) or cfg.scoring.get("keyword_tiers", {})
+    core_list = [k for k in tiers.get("tier_core", [])]
+    if not core_list:
+        return bool(paper.matched_keywords)
+    text = f"{paper.title} {paper.abstract}".lower()
+    return any(_in_text(text, k) for k in core_list)
 
 
 def match_authors(paper, watched: list[str]) -> list[str]:

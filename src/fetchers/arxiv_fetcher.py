@@ -16,9 +16,10 @@ log = logging.getLogger(__name__)
 
 # AI/ML 分类需要搭配金融关键词搜索，避免拉到无关论文
 _AI_FINANCE_KEYWORDS = [
-    "finance", "trading", "portfolio", "asset", "market",
-    "risk", "cryptocurrency", "blockchain", "token", "DeFi",
-    "stock", "option", "derivative", "pricing", "liquidity",
+    "financial", "fintech", "asset pricing", "option pricing", "derivative pricing",
+    "cryptocurrency", "blockchain", "token", "DeFi", "decentralized finance",
+    "algorithmic trading", "quantitative trading", "portfolio", "trading strategy",
+    "volatility forecast", "credit risk", "market microstructure", "liquidity",
 ]
 
 

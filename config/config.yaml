@@ -201,7 +201,6 @@ keyword_tiers:
 # 特殊关注作者：命中即加分；即使分数低于阈值也会单独标注“★作者关注”并收入日报
 watched_authors:
   - "Ackerer"
-  - "Singh"
   - "Schär"
   - "Bruno Biais"
   - "Lin William Cong"
@@ -321,11 +320,9 @@ sources:
       - "q-fin.PM"       # Portfolio Management
       - "q-fin.EC"       # Economics
       # AI / ML / NLP（覆盖 AI 金融交叉论文）
+      # 注：cs.AI/cs.LG 论文量巨大，靠核心关键词门禁过滤掉纯技术论文
       - "cs.AI"          # Artificial Intelligence
       - "cs.LG"          # Machine Learning
-      - "stat.ML"        # Machine Learning (Stat)
-      - "cs.CL"          # Computation & Language (NLP/LLM)
-      - "cs.CE"          # Computational Engineering
     lookback_days: 14
     max_results: 300
   nber:

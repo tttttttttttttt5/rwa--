@@ -70,9 +70,12 @@ def main():
     for p in papers:
         scoring.enrich(p, cfg)
 
-    # 3. 候选池：至少命中一个关键词或是关注作者，过滤无关噪音
-    candidates = [p for p in papers if p.matched_keywords or p.watched_authors]
-    log.info("候选池 %d 篇（命中关键词或关注作者）", len(candidates))
+    # 3. 候选池：须命中【核心金融关键词】或属于关注作者。
+    #    仅命中 AI 泛词（LLM/GNN/neural network 等）的纯技术论文不入选，
+    #    避免 AI 大分类灌入大量与 RWA/DeFi 无关的论文。
+    candidates = [p for p in papers
+                  if scoring.match_core_keywords(p, cfg) or p.watched_authors]
+    log.info("候选池 %d 篇（命中核心关键词或关注作者）", len(candidates))
 
     # 4. AI 评分（控制成本：只送规则分前 N 篇）
     llm = LLM(cfg.ai)
