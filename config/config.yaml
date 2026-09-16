@@ -251,7 +251,8 @@ journal_priority:
 
 # ---------- 3. 评分阈值与分项权重 ----------
 scoring:
-  threshold: 55                 # 低于此分数的论文直接过滤（特殊关注作者除外）
+  threshold: 45                 # 低于此分数的论文直接过滤（特殊关注作者除外）
+                                # 纯规则打分（ai.enabled=false）整体偏低，45 兼顾相关性与覆盖
   weights:                      # 合计 100
     keyword: 40
     journal: 30
