@@ -45,6 +45,7 @@ def build_context(papers, top_picks, citation_text, cfg, stats, synthesis=None):
             "summary_content": p.summary_content,
             "summary_method": p.summary_method,
             "summary_takeaway": p.summary_takeaway,
+            "summary_highlight": p.summary_highlight,
         })
     synth = synthesis or {}
     return {
@@ -58,6 +59,7 @@ def build_context(papers, top_picks, citation_text, cfg, stats, synthesis=None):
         "keywords": cfg.keywords,
         "synthesis_overview": synth.get("overview", ""),
         "synthesis_takeaways": synth.get("takeaways", []) or [],
+        "topic_ideas": synth.get("topic_ideas", []) or [],
     }
 
 
@@ -113,10 +115,19 @@ def render_markdown(ctx) -> str:
             lines.append(f"  - 方法：{r['summary_method']}")
         if r.get("summary_takeaway"):
             lines.append(f"  - 可借鉴：{r['summary_takeaway']}")
+        if r.get("summary_highlight"):
+            lines.append(f"  - 亮点：{r['summary_highlight']}")
+        if r.get("abstract"):
+            lines.append(f"  - 摘要：{r['abstract']}")
     lines.append("")
     lines.append("## 论文关联图说明")
     lines.append(ctx["citation_text"])
     lines.append("")
+    if ctx.get("topic_ideas"):
+        lines.append("## 🎯 创新性选题推荐（文末彩蛋）")
+        for i, t in enumerate(ctx["topic_ideas"], 1):
+            lines.append(f"- **{i}. {t}**")
+        lines.append("")
     lines.append(f"## 关键词列表\n{', '.join(ctx['keywords'])}")
     return "\n".join(lines)
 

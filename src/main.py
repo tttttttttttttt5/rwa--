@@ -129,6 +129,7 @@ def main():
                 p.summary_content = s.get("content", "")
                 p.summary_method = s.get("method", "")
                 p.summary_takeaway = s.get("takeaway", "")
+                p.summary_highlight = s.get("highlight", "")
             except Exception as e:
                 log.warning("结构化总结异常 [%s]: %s", p.title[:40], e)
 

@@ -392,18 +392,102 @@ def summarize_paper(paper) -> dict:
         hint = f"，方法含 {methods[0]}"
     digest = f"{prefix}{hint}。" if prefix.strip() else f"研究{title[:30]}。"
 
+    # 5) 亮点：做得好的地方（可借鉴要点）
+    if takeaways:
+        highlight = "做得好的地方：" + takeaways[0]
+    else:
+        highlight = "做得好的地方：方法/数据设计规范，可直接作为对照基线。"
+    if len(topics) > 1:
+        highlight += f"；交叉了 {topics[1]} 与 {topics[0]}"
+
     return {
         "content": _clean(content),
         "method": _clean(method),
         "takeaway": _clean(takeaway),
+        "highlight": _clean(highlight),
         "digest": _clean(digest),
     }
 
 
-# ---------- 整体：大总结 + 可借鉴要点 ----------
+# ---------- 创新性选题推荐：基于今日入选论文的方向生成 ----------
+_TOPIC_DEFS = {
+    "RWA": "现实资产通证化的定价/抵押/清算机制",
+    "DeFi": "去中心化金融协议的机制与经济安全",
+    "stablecoin": "稳定币钉住与储备管理",
+    "lending": "信贷/借贷协议与违约风险",
+    "liquidity": "流动性供给、做市与无常损失",
+    "machine_learning": "机器学习/AI 金融建模",
+    "credit": "信用风险与违约预测",
+    "pricing": "资产定价与估值",
+    "risk": "风险度量与尾部风险",
+    "nft": "数字资产与代币经济",
+}
+
+
+def _deduce_primary(texts: list[str], hint_kw: list[str]) -> str:
+    """粗判今日的主题主线。"""
+    t = " ".join(texts).lower() + " " + " ".join(hint_kw).lower()
+    for key in ("rwa", "tokeniz", "real", "stabil", "defi", "lend", "credit", "amort", "liquidity"):
+        if key in t:
+            if key == "rwa" or "tokeniz" in t:
+                return "RWA"
+            if "stabil" in t:
+                return "stablecoin"
+            if "defi" in t:
+                return "DeFi"
+            if "lend" in t:
+                return "lending"
+            if "credit" in t:
+                return "credit"
+    return "pricing"
+
+
+def build_topic_ideas(papers: list) -> list[str]:
+    """根据今日入选论文生成 2-3 条创新的跨领域选题建议。"""
+    if not papers:
+        return [
+            "RWA 资产打包后的透明度计量：可用链上数据做可验证审计框架",
+            "RWA 与 DeFi 组合的定价风险传染建模",
+            "把 GNN 用于 RWA 抵押品体系的做法与 Baseline 对照",
+        ]
+    texts = [f"{p.title} {p.abstract}" for p in papers]
+    hint_kw = [k for p in papers for k in (p.matched_keywords or [])]
+    primary = _deduce_primary(texts, hint_kw)
+    methods = []
+    for x in texts:
+        for pat, label in METHOD_PATTERNS:
+            if re.search(pat, x, flags=re.I) and label not in methods:
+                methods.append(label)
+    first_method = methods[0] if methods else "计量/建模"
+
+    core_desc = _TOPIC_DEFS.get(primary, _TOPIC_DEFS["pricing"])
+    candidates = [
+        f"在「{core_desc}」中引入 {first_method}，做跨类别、跨协议的稳健性对照，可能是下一个增量点",
+        f"把今日的 {first_method} 迁移到 RWA 抵押品定价，弥补现实资产在链上风险度量的空白",
+    ]
+    # 若同时出现 RWA 与 AI/ML，追加一条交叉选题
+    joined = " ".join(texts).lower()
+    methods_low = " ".join(methods).lower()
+    if ("token" in joined or "rwa" in joined) and ("machine" in joined or "learning" in methods_low or "学习" in methods_low or "神经" in methods_low):
+        candidates.append(
+            "RWA × 机器学习创新选题：用深度模型预测通证化资产投资者行为与折价，填补链上-链下信息差"
+        )
+    else:
+        candidates.append(
+            "原创增量建议：针对现实资产通证化的流动性折价做限价/回测框架，并以链上数据做外审依据"
+        )
+    # 去重去空
+    out = []
+    for c in candidates:
+        if c and c not in out:
+            out.append(c)
+    return out[:3]
+
+
+# ---------- 整体：大总结 + 可借鉴要点 + 选题推荐 ----------
 def synthesize(papers: list) -> dict:
     if not papers:
-        return {"overview": "今日无入选论文。", "takeaways": []}
+        return {"overview": "今日无入选论文。", "takeaways": [], "topic_ideas": []}
 
     kw_counter = Counter()
     method_counter = Counter()
@@ -450,4 +534,11 @@ def synthesize(papers: list) -> dict:
         ])
     takeaways = takeaways[:5]
 
-    return {"overview": _clean(overview), "takeaways": [_clean(t) for t in takeaways]}
+    # topic_ideas：创新性选题推荐
+    topic_ideas = build_topic_ideas(papers)
+
+    return {
+        "overview": _clean(overview),
+        "takeaways": [_clean(t) for t in takeaways],
+        "topic_ideas": [_clean(t) for t in topic_ideas],
+    }

@@ -25,6 +25,7 @@ class Paper:
     summary_content: str = ""       # AI 结构化总结：研究内容
     summary_method: str = ""        # AI 结构化总结：方法
     summary_takeaway: str = ""      # AI 结构化总结：可借鉴之处
+    summary_highlight: str = ""     # 规则/AI 结构化总结：做得好的亮点
     cites: list[str] = field(default_factory=list)       # 本集合内被引用的 key
     cited_by: list[str] = field(default_factory=list)
     raw: dict = field(default_factory=dict)

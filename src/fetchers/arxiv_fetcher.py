@@ -44,7 +44,7 @@ class ArxivFetcher(BaseFetcher):
 
         cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=lookback)
         out: list[Paper] = []
-        client = arxiv.Client(num_retries=3, page_size=100)
+        client = arxiv.Client(num_retries=5, page_size=100, delay_seconds=5)
 
         # --- 查询 1：金融分类（全量，不加关键词）---
         if fin_cats:
@@ -62,20 +62,53 @@ class ArxivFetcher(BaseFetcher):
         return out
 
     def _run_query(self, client, query: str, max_results: int, cutoff) -> list[Paper]:
-        import arxiv
-        search = arxiv.Search(
-            query=query,
-            max_results=max_results,
-            sort_by=arxiv.SortCriterion.SubmittedDate,
-        )
+        """手写分页 + 每页间休眠 + HTTP 429 指数退避重试，规避限流。"""
+        import time
+        import urllib.error as uerr
+
+        page_size = 100
         out: list[Paper] = []
+        # 用一个小切片查询哨兵判断还有没有结果：手动翻页避免一次大查询触发 429
         try:
-            for r in client.results(search):
+            import arxiv
+        except ImportError:
+            return []
+
+        for start in range(0, max_results, page_size):
+            # 429 指数退避重试当前这一页
+            attempt = 0
+            page_results = None
+            while True:
+                try:
+                    search = arxiv.Search(
+                        query=query,
+                        max_results=start + page_size,
+                        sort_by=arxiv.SortCriterion.SubmittedDate,
+                    )
+                    page_results = list(client.results(search, offset=start))
+                    break
+                except uerr.HTTPError as e:
+                    if e.code == 429 and attempt < 5:
+                        wait = 8 * (attempt + 1)
+                        log.warning("arXiv 429 限流，第 %d 次重试，%.0f 秒后重试", attempt + 1, wait)
+                        time.sleep(wait)
+                        attempt += 1
+                        continue
+                    log.warning("arXiv 查询出错 [%s...]: %s", query[:60], e)
+                    return out
+                except Exception as e:
+                    log.warning("arXiv 查询异常 [%s...]: %s", query[:60], e)
+                    return out
+
+            # 本次分页没有结果 → 提前结束
+            if not page_results:
+                break
+            for r in page_results:
                 pub = r.published
                 if pub.tzinfo is None:
                     pub = pub.replace(tzinfo=datetime.timezone.utc)
                 if pub < cutoff:
-                    break
+                    return out  # 已按提交时间倒序，遇到旧的就不用再往下
                 entry_id = getattr(r, "entry_id", "") or ""
                 arxid = entry_id.split("/abs/")[-1] if "/abs/" in entry_id else r.get_short_id()
                 if arxid and arxid[-2] == "v" and arxid[-1].isdigit():
@@ -97,6 +130,6 @@ class ArxivFetcher(BaseFetcher):
                     doi=getattr(r, "doi", None),
                     raw={"categories": r.categories, "primary": r.primary_category},
                 ))
-        except Exception as e:
-            log.warning("arXiv 查询出错 [%s...]: %s", query[:80], e)
+            # 分页间隔：等一段时间再请求下一页，避免限流
+            time.sleep(5)
         return out

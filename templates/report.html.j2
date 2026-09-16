@@ -110,14 +110,15 @@
 </div>
 <div style="font-size:12px;color:#6b7280;margin-top:4px;">{{ r.authors }} · {{ r.source }} · {{ r.journal }}</div>
 {% if r.digest %}<div style="font-size:12px;color:#4c1d95;margin-top:6px;">导读：{{ r.digest }}</div>{% endif %}
-{% if r.summary_content or r.summary_method or r.summary_takeaway %}
+{% if r.summary_content or r.summary_method or r.summary_takeaway or r.summary_highlight %}
 <div style="margin-top:8px;padding:8px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">
 {% if r.summary_content %}<div style="font-size:12px;color:#14532d;line-height:1.6;"><span style="color:#15803d;font-weight:600;">研究内容：</span>{{ r.summary_content }}</div>{% endif %}
 {% if r.summary_method %}<div style="font-size:12px;color:#14532d;line-height:1.6;margin-top:3px;"><span style="color:#15803d;font-weight:600;">方法：</span>{{ r.summary_method }}</div>{% endif %}
 {% if r.summary_takeaway %}<div style="font-size:12px;color:#14532d;line-height:1.6;margin-top:3px;"><span style="color:#15803d;font-weight:600;">可借鉴：</span>{{ r.summary_takeaway }}</div>{% endif %}
+{% if r.summary_highlight %}<div style="font-size:12px;color:#14532d;line-height:1.6;margin-top:3px;"><span style="color:#15803d;font-weight:600;">亮点：</span>{{ r.summary_highlight }}</div>{% endif %}
 </div>
 {% endif %}
-{% if r.abstract %}<div style="font-size:12px;color:#4b5563;margin-top:6px;line-height:1.55;">{{ r.abstract }}</div>{% endif %}
+{% if r.abstract %}<div style="font-size:12px;color:#4b5563;margin-top:6px;line-height:1.55;"><span style="color:#9ca3af;">摘要：</span>{{ r.abstract }}</div>{% endif %}
 </td>
 <td style="width:60px;text-align:center;vertical-align:middle;">
 <div style="font-size:18px;font-weight:700;color:#6366f1;">{{ '%.0f'|format(r.score) }}</div>
@@ -150,6 +151,24 @@
 </div>
 </td>
 </tr>
+
+<!-- 创新性选题推荐 -->
+{% if topic_ideas %}
+<tr>
+<td style="padding:18px 32px 4px;">
+<div style="font-size:16px;font-weight:700;color:#1f2329;border-left:4px solid #ef4444;padding-left:10px;">🎯 创新性选题推荐（文末彩蛋）</div>
+</td>
+</tr>
+<tr>
+<td style="padding:8px 32px;">
+<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px 16px;">
+<ul style="margin:0;padding-left:20px;">
+{% for t in topic_ideas %}<li style="font-size:13px;color:#7f1d1d;line-height:1.65;margin-bottom:6px;">{{ t }}</li>{% endfor %}
+</ul>
+</div>
+</td>
+</tr>
+{% endif %}
 
 <!-- 页脚 -->
 <tr>
